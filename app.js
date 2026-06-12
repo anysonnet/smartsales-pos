@@ -16,6 +16,10 @@ document.addEventListener("DOMContentLoaded", () => {
   let activityLog = [];
   let eodHistory = [];
   let currentUser = null;
+  let lineConfig = {
+    token: localStorage.getItem("smartsales_line_token") || "",
+    userId: localStorage.getItem("smartsales_line_user_id") || ""
+  };
   
   let activeTab = "dashboard";
   let html5QrcodeScanner = null;
@@ -2743,7 +2747,38 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // --- END OF DAY CASH RECONCILIATION ---
-  document.getElementById("eodReconcileBtn").addEventListener("click", () => {
+
+  // LINE send helper
+  async function sendLineReport(data) {
+    showToast("กำลังส่งรายงานไปที่ LINE...", "info");
+    try {
+      const payload = {
+        ...data,
+        lineToken: lineConfig.token,
+        lineUserId: lineConfig.userId
+      };
+
+      const response = await fetch("/api/send-line-report", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const resData = await response.json();
+      if (response.ok) {
+        showToast("ส่งรายงานยอดขายรายวันไปที่ LINE สำเร็จแล้ว! 🚀", "success");
+      } else {
+        showToast(resData.error || "ไม่สามารถส่งรายงานไปที่ LINE ได้", "error");
+      }
+    } catch (error) {
+      console.error(error);
+      showToast("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์", "error");
+    }
+  }
+
+  const triggerEodReconciliation = () => {
     const todayStr = new Date().toISOString().split("T")[0];
     // Cash transactions today (exclude voided)
     const cashTxs = transactions.filter(t => t.timestamp.startsWith(todayStr) && t.paymentMethod === "Cash" && !t.voided);
@@ -2756,7 +2791,10 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("eodResultWrapper").style.display = "none";
     
     openModal("eodReconcileModal");
-  });
+  };
+
+  document.getElementById("eodReconcileBtn").addEventListener("click", triggerEodReconciliation);
+  document.getElementById("posEodBtn").addEventListener("click", triggerEodReconciliation);
 
   document.getElementById("eodActualCashInput").addEventListener("input", () => {
     const systemCashText = document.getElementById("eodSystemCash").textContent.replace("฿", "").replace(/,/g, "");
@@ -2789,14 +2827,15 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  document.getElementById("eodConfirmBtn").addEventListener("click", () => {
+  // Reusable save EOD entry function
+  function saveEodEntry() {
     const systemCashText = document.getElementById("eodSystemCash").textContent.replace("฿", "").replace(/,/g, "");
     const systemCash = parseFloat(systemCashText) || 0;
     const actualCashVal = document.getElementById("eodActualCashInput").value;
     
     if (actualCashVal === "") {
       showToast("กรุณากรอกยอดเงินสดนับจริงในลิ้นชัก", "error");
-      return;
+      return null;
     }
 
     const actualCash = parseFloat(actualCashVal);
@@ -2818,6 +2857,58 @@ document.addEventListener("DOMContentLoaded", () => {
     
     closeModal("eodReconcileModal");
     renderEODHistory();
+
+    return entry;
+  }
+
+  document.getElementById("eodConfirmBtn").addEventListener("click", () => {
+    saveEodEntry();
+  });
+
+  document.getElementById("eodSendLineBtn").addEventListener("click", () => {
+    const entry = saveEodEntry();
+    if (!entry) return;
+
+    // Calculate today's details for LINE report
+    const todayStr = entry.timestamp.split("T")[0];
+    const todayTxs = transactions.filter(t => t.timestamp.startsWith(todayStr) && !t.voided);
+    const qrSales = todayTxs.filter(t => t.paymentMethod === "QR Code").reduce((sum, t) => sum + t.total, 0);
+    const cardSales = todayTxs.filter(t => t.paymentMethod === "Credit Card").reduce((sum, t) => sum + t.total, 0);
+    const totalSales = todayTxs.reduce((sum, t) => sum + t.total, 0);
+    const billCount = todayTxs.length;
+
+    sendLineReport({
+      system_cash: entry.system_cash,
+      actual_cash: entry.actual_cash,
+      diff: entry.diff,
+      qr_sales: qrSales,
+      card_sales: cardSales,
+      total_sales: totalSales,
+      bill_count: billCount,
+      user: entry.user,
+      timestamp: entry.timestamp
+    });
+  });
+
+  // LINE Settings listeners
+  document.getElementById("lineConfigBtn").addEventListener("click", () => {
+    document.getElementById("lineTokenInput").value = lineConfig.token;
+    document.getElementById("lineUserIdInput").value = lineConfig.userId;
+    openModal("lineConfigModal");
+  });
+
+  document.getElementById("saveLineConfigBtn").addEventListener("click", () => {
+    const token = document.getElementById("lineTokenInput").value.trim();
+    const userId = document.getElementById("lineUserIdInput").value.trim();
+    
+    lineConfig.token = token;
+    lineConfig.userId = userId;
+    
+    localStorage.setItem("smartsales_line_token", token);
+    localStorage.setItem("smartsales_line_user_id", userId);
+    
+    showToast("บันทึกการตั้งค่า LINE สำเร็จ!");
+    closeModal("lineConfigModal");
   });
 
   function renderEODHistory() {
@@ -2826,7 +2917,7 @@ document.addEventListener("DOMContentLoaded", () => {
     tbody.innerHTML = "";
 
     if (eodHistory.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:1.5rem;">ยังไม่มีบันทึกประวัติการปิดยอดประจำวัน</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--text-muted); padding:1.5rem;">ยังไม่มีบันทึกประวัติการปิดยอดประจำวัน</td></tr>';
       return;
     }
 
@@ -2854,10 +2945,46 @@ document.addEventListener("DOMContentLoaded", () => {
         <td style="font-family:monospace; text-align:right; color:${statusColor}; font-weight:bold;">${diffValText}</td>
         <td style="color:${statusColor}; font-weight:bold;">${statusText}</td>
         <td>${entry.user}</td>
+        <td style="text-align:center;">
+          <button class="btn btn-sm btn-success eod-resend-line-btn" data-timestamp="${entry.timestamp}" title="ส่งรายงานไปที่ LINE">
+            <i data-lucide="send"></i>
+          </button>
+        </td>
       `;
       tbody.appendChild(tr);
     });
+    lucide.createIcons();
   }
+
+  // Handle click on resend EOD line
+  document.addEventListener("click", (e) => {
+    const resendBtn = e.target.closest(".eod-resend-line-btn");
+    if (resendBtn) {
+      const timestamp = resendBtn.getAttribute("data-timestamp");
+      const entry = eodHistory.find(x => x.timestamp === timestamp);
+      if (!entry) return;
+
+      const dateStr = entry.timestamp.split("T")[0];
+      // Filter transactions for that specific day
+      const dayTxs = transactions.filter(t => t.timestamp.startsWith(dateStr) && !t.voided);
+      const qrSales = dayTxs.filter(t => t.paymentMethod === "QR Code").reduce((sum, t) => sum + t.total, 0);
+      const cardSales = dayTxs.filter(t => t.paymentMethod === "Credit Card").reduce((sum, t) => sum + t.total, 0);
+      const totalSales = dayTxs.reduce((sum, t) => sum + t.total, 0);
+      const billCount = dayTxs.length;
+
+      sendLineReport({
+        system_cash: entry.system_cash,
+        actual_cash: entry.actual_cash,
+        diff: entry.diff,
+        qr_sales: qrSales,
+        card_sales: cardSales,
+        total_sales: totalSales,
+        bill_count: billCount,
+        user: entry.user || "System",
+        timestamp: entry.timestamp
+      });
+    }
+  });
 
   // --- BACKUP / RESTORE JSON ---
   document.getElementById("backupDataBtn").addEventListener("click", () => {

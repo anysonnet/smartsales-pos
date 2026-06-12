@@ -111,6 +111,10 @@
       </nav>
       
       <div class="sidebar-footer">
+        <button class="theme-toggle-btn admin-only flex-item" id="lineConfigBtn" style="width: 100%; margin-bottom: 0.5rem;">
+          <i data-lucide="message-square"></i>
+          <span>ตั้งค่าส่ง LINE</span>
+        </button>
         <button class="theme-toggle-btn" id="themeToggleBtn" style="width: 100%; margin-bottom: 0.5rem;">
           <i data-lucide="sun" class="sun-icon"></i>
           <span>สลับโหมดแสง</span>
@@ -296,6 +300,7 @@
                     <th>ส่วนต่าง (ดุล)</th>
                     <th>สถานะ</th>
                     <th>ผู้ตรวจนับ</th>
+                    <th style="text-align: center;">ส่ง LINE</th>
                   </tr>
                 </thead>
                 <tbody id="eodHistoryTableBody">
@@ -422,6 +427,10 @@
               <button class="checkout-btn" id="posCheckoutBtn" disabled>
                 <i data-lucide="badge-check"></i>
                 <span>ชำระเงิน & พิมพ์ใบเสร็จ (F8)</span>
+              </button>
+              <button class="btn btn-warning" id="posEodBtn" style="width: 100%; margin-top: 0.5rem; padding: 0.75rem; border-radius: 12px; font-weight: bold; display: flex; justify-content: center; align-items: center; gap: 0.5rem; border: none; cursor: pointer; transition: all 0.3s;">
+                <i data-lucide="calculator"></i>
+                <span>ปิดยอดประจำวัน (EOD)</span>
               </button>
             </div>
           </div>
@@ -1090,9 +1099,43 @@
           </div>
         </div>
       </div>
+      <div class="modal-footer" style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+        <button class="btn btn-secondary modal-close-action-btn">ยกเลิก</button>
+        <button class="btn btn-primary" id="eodConfirmBtn">บันทึกปิดยอดในเครื่อง</button>
+        <button class="btn btn-success" id="eodSendLineBtn" style="display: flex; align-items: center; gap: 0.35rem;">
+          <i data-lucide="send"></i>
+          <span>บันทึก & ส่งรายงาน LINE</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LINE CONFIGURATION MODAL -->
+  <div class="modal-overlay" id="lineConfigModal">
+    <div class="modal-content" style="max-width: 480px;">
+      <div class="modal-header">
+        <h3>ตั้งค่าการส่งรายงานไปที่ LINE</h3>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 1rem;">
+          ตั้งค่าการส่งข้อมูล EOD อัตโนมัติไปที่ LINE Messaging API (สามารถนำรหัส Token และ ID มาจาก LINE Developers Console)
+        </p>
+        <div class="form-group">
+          <label for="lineTokenInput">LINE Channel Access Token</label>
+          <input type="text" class="form-input" id="lineTokenInput" placeholder="กรอก Channel Access Token...">
+        </div>
+        <div class="form-group" style="margin-top: 0.75rem;">
+          <label for="lineUserIdInput">LINE User ID / Group ID (ผู้รับ)</label>
+          <input type="text" class="form-input" id="lineUserIdInput" placeholder="กรอก User ID หรือ Group ID (เช่น U123456...)">
+        </div>
+        <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 0.5rem; line-height: 1.4;">
+          * หมายเหตุ: ข้อมูลนี้จะถูกบันทึกไว้ในเบราว์เซอร์นี้ หากต้องการใช้แบบถาวรบน Cloudflare แนะนำให้ตั้งค่าตัวแปรสภาพแวดล้อม (Environment Variables) <code>LINE_CHANNEL_ACCESS_TOKEN</code> และ <code>LINE_USER_ID</code> ใน Cloudflare Pages Dashboard
+        </div>
+      </div>
       <div class="modal-footer">
         <button class="btn btn-secondary modal-close-action-btn">ยกเลิก</button>
-        <button class="btn btn-primary" id="eodConfirmBtn">ยืนยันและบันทึกปิดยอด</button>
+        <button class="btn btn-primary" id="saveLineConfigBtn">บันทึกการตั้งค่า</button>
       </div>
     </div>
   </div>
