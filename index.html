@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html lang="th" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartSales POS V2 — ระบบจัดการร้านค้าและรายงานยอดขาย</title>
+  <!-- Google Fonts & Styles -->
+  <link rel="stylesheet" href="style.css">
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- JsBarcode CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+  <!-- html5-qrcode CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <!-- Lucide Icons UMD -->
+  <script src="https://cdn.jsdelivr.net/npm/lucide/dist/umd/lucide.min.js"></script>
+  <!-- SheetJS Excel Library CDN -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+
+  <!-- 1. LOGIN SCREEN -->
+  <div class="login-screen" id="loginScreen">
+    <div class="login-card" id="loginCard">
+      <div class="login-logo">
+        <div class="logo-icon">
+          <i data-lucide="shopping-bag" style="color:white; width:32px; height:32px;"></i>
+        </div>
+        <h2>SmartSales POS V2</h2>
+        <p>ระบบจัดการร้านค้าและรายงานยอดขาย</p>
+      </div>
+      <form class="login-form" id="loginForm">
+        <div class="form-group">
+          <label for="loginUsername">ชื่อผู้ใช้งาน (Role)</label>
+          <select class="form-select" id="loginUsername">
+            <option value="admin">ผู้ดูแลระบบ (Admin)</option>
+            <option value="cashier">พนักงานแคชเชียร์ (Cashier)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="loginPassword">รหัสผ่าน</label>
+          <input type="password" class="form-input" id="loginPassword" placeholder="กรอกรหัสผ่าน..." required autocomplete="off">
+        </div>
+        <button type="submit" class="login-btn" id="loginBtn">
+          <i data-lucide="log-in" style="width:18px; height:18px; vertical-align:-3px; margin-right:6px; display:inline-block;"></i>
+          เข้าสู่ระบบ
+        </button>
+        <div class="login-error" id="loginError"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 2. APP CONTAINER -->
+  <div class="app-container" id="appContainer" style="display:none;">
+    
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="logo-section">
+        <div class="logo-icon">
+          <i data-lucide="bar-chart-3"></i>
+        </div>
+        <div class="logo-text">
+          <h2>SmartSales</h2>
+          <p>POS V2 — Daily Sales</p>
+        </div>
+      </div>
+      
+      <!-- User Badge -->
+      <div class="user-badge" id="userBadge">
+        <div class="user-badge-avatar admin" id="userAvatar">A</div>
+        <div class="user-badge-info">
+          <span class="name" id="userDisplayName">Admin</span>
+          <span class="role" id="userRoleLabel">ผู้ดูแลระบบ</span>
+        </div>
+        <button class="logout-btn" id="logoutBtn" title="ออกจากระบบ">
+          <i data-lucide="log-out"></i>
+        </button>
+      </div>
+      
+      <nav class="nav-menu">
+        <li class="nav-item active admin-only" data-tab="dashboard">
+          <a href="#" class="nav-link">
+            <i data-lucide="layout-dashboard"></i>
+            <span>แดชบอร์ด</span>
+          </a>
+        </li>
+        <li class="nav-item" data-tab="pos">
+          <a href="#" class="nav-link">
+            <i data-lucide="shopping-cart"></i>
+            <span>เครื่อง POS จำลอง</span>
+          </a>
+        </li>
+        <li class="nav-item" data-tab="catalog">
+          <a href="#" class="nav-link">
+            <i data-lucide="package"></i>
+            <span>คลังสินค้า & บาร์โค้ด</span>
+          </a>
+        </li>
+        <li class="nav-item admin-only" data-tab="reports">
+          <a href="#" class="nav-link">
+            <i data-lucide="file-spreadsheet"></i>
+            <span>รายงานยอดขาย</span>
+          </a>
+        </li>
+        <li class="nav-item admin-only" data-tab="activityLog">
+          <a href="#" class="nav-link">
+            <i data-lucide="scroll-text"></i>
+            <span>บันทึกกิจกรรม</span>
+          </a>
+        </li>
+      </nav>
+      
+      <div class="sidebar-footer">
+        <button class="theme-toggle-btn" id="themeToggleBtn" style="width: 100%; margin-bottom: 0.5rem;">
+          <i data-lucide="sun" class="sun-icon"></i>
+          <span>สลับโหมดแสง</span>
+        </button>
+        <div class="backup-actions" style="display: flex; gap: 0.5rem;">
+          <button class="btn btn-secondary btn-sm" id="backupDataBtn" style="flex: 1; padding: 0.5rem; font-size: 0.75rem; justify-content: center;">
+            <i data-lucide="download-cloud" style="width:14px; height:14px;"></i>
+            <span>สำรอง</span>
+          </button>
+          <button class="btn btn-secondary btn-sm" id="restoreDataBtn" style="flex: 1; padding: 0.5rem; font-size: 0.75rem; justify-content: center;">
+            <i data-lucide="upload-cloud" style="width:14px; height:14px;"></i>
+            <span>กู้คืน</span>
+          </button>
+          <input type="file" id="restoreFileInput" accept=".json" style="display: none;">
+        </div>
+      </div>
+    </aside>
+    
+    <!-- Main Content Area -->
+    <main class="main-content">
+      
+      <!-- Top Header -->
+      <header class="top-header">
+        <div class="page-title">
+          <h1 id="pageTitleText">แดชบอร์ดสรุปยอดขาย</h1>
+        </div>
+        <div class="date-indicator">
+          <i data-lucide="calendar"></i>
+          <span id="currentDateDisplay">11 มิถุนายน 2026</span>
+        </div>
+      </header>
+      
+      <!-- 1. DASHBOARD VIEW -->
+      <section id="dashboard" class="view-panel active">
+        <!-- KPI Cards Grid -->
+        <div class="stats-grid">
+          <div class="stat-card revenue">
+            <div class="stat-header">
+              <span>ยอดขายทั้งหมด (Revenue)</span>
+              <div class="stat-icon">
+                <i data-lucide="dollar-sign"></i>
+              </div>
+            </div>
+            <div class="stat-value" id="kpiRevenue">฿0.00</div>
+            <div class="stat-trend up" id="kpiRevenueTrend">
+              <i data-lucide="trending-up"></i> <span>0% เทียบเมื่อวาน</span>
+            </div>
+          </div>
+          
+          <div class="stat-card profit">
+            <div class="stat-header">
+              <span>กำไรสุทธิ (Net Profit)</span>
+              <div class="stat-icon">
+                <i data-lucide="line-chart"></i>
+              </div>
+            </div>
+            <div class="stat-value" id="kpiProfit">฿0.00</div>
+            <div class="stat-trend up" id="kpiProfitTrend">
+              <i data-lucide="trending-up"></i> <span>0% เทียบเมื่อวาน</span>
+            </div>
+          </div>
+          
+          <div class="stat-card sales">
+            <div class="stat-header">
+              <span>จำนวนธุรกรรม (Transactions)</span>
+              <div class="stat-icon">
+                <i data-lucide="receipt"></i>
+              </div>
+            </div>
+            <div class="stat-value" id="kpiSalesCount">0</div>
+            <div class="stat-trend up" id="kpiSalesTrend">
+              <i data-lucide="trending-up"></i> <span>0 บิล</span>
+            </div>
+          </div>
+          
+          <div class="stat-card margin">
+            <div class="stat-header">
+              <span>อัตรากำไรเฉลี่ย (Profit Margin)</span>
+              <div class="stat-icon">
+                <i data-lucide="percent"></i>
+              </div>
+            </div>
+            <div class="stat-value" id="kpiMargin">0%</div>
+            <div class="stat-trend neutral" id="kpiMarginTrend">
+              <span>อ้างอิงจากต้นทุนสินค้า</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Dashboard Charts Grid -->
+        <div class="charts-grid">
+          <!-- Sales Trend Line Chart -->
+          <div class="chart-card">
+            <div class="chart-header">
+              <div class="chart-title">
+                <h3>แนวโน้มยอดขายรายวัน</h3>
+                <p>เปรียบเทียบยอดขายรวมและกำไรสุทธิในรอบ 7 วันที่ผ่านมา</p>
+              </div>
+            </div>
+            <div class="chart-wrapper">
+              <canvas id="salesTrendChart"></canvas>
+            </div>
+          </div>
+          
+          <!-- Top Selling Products Bar Chart -->
+          <div class="chart-card">
+            <div class="chart-header">
+              <div class="chart-title">
+                <h3>สินค้าขายดี 5 อันดับแรก</h3>
+                <p>จำแนกตามจำนวนชิ้นที่ขายได้</p>
+              </div>
+            </div>
+            <div class="chart-wrapper">
+              <canvas id="topProductsChart"></canvas>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Third Chart / Payment method info & Low stock / EOD -->
+        <div class="charts-grid" style="grid-template-columns: 1.2fr 1.5fr;">
+          <div class="chart-card">
+            <div class="chart-header">
+              <div class="chart-title">
+                <h3>สัดส่วนช่องทางการชำระเงิน</h3>
+                <p>จำแนกตามจำนวนยอดชำระเงิน</p>
+              </div>
+            </div>
+            <div class="chart-wrapper">
+              <canvas id="paymentMethodsChart"></canvas>
+            </div>
+          </div>
+          
+          <!-- Low Stock Alert Panel inside Dashboard -->
+          <div class="chart-card" style="height: 100%; overflow: hidden;">
+            <div class="chart-header">
+              <div class="chart-title">
+                <h3>แจ้งเตือนสินค้าใกล้หมด (Low Stock Alerts)</h3>
+                <p>รายการสินค้าที่สต็อกเหลือน้อยกว่า 10 ชิ้น หรือของหมด</p>
+              </div>
+              <button class="btn btn-secondary btn-sm" id="viewCatalogFromDashboardBtn" style="padding: 0.3rem 0.75rem; font-size: 0.8rem;">
+                ดูคลังสินค้า
+              </button>
+            </div>
+            <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
+              <table class="custom-table" style="font-size: 0.8rem;">
+                <thead>
+                  <tr>
+                    <th>บาร์โค้ด</th>
+                    <th>ชื่อสินค้า</th>
+                    <th>หมวดหมู่</th>
+                    <th>ราคา</th>
+                    <th>คงเหลือ</th>
+                  </tr>
+                </thead>
+                <tbody id="dashboardLowStockTableBody">
+                  <!-- Generated dynamically in app.js -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- End of Day Card (Admin Only) -->
+        <div class="charts-grid" style="grid-template-columns: 1fr; margin-top: 1.5rem;">
+          <div class="chart-card admin-only">
+            <div class="chart-header">
+              <div class="chart-title">
+                <h3>ปิดยอดประจำวัน (End-of-Day Reconciliation)</h3>
+                <p>ตรวจสอบยอดเงินสดจริงในลิ้นชักเปรียบเทียบกับยอดขายเงินสดสะสมในระบบเพื่อหาผลต่าง</p>
+              </div>
+              <button class="btn btn-warning" id="eodReconcileBtn">
+                <i data-lucide="calculator"></i>
+                <span>เริ่มปิดยอดประจำวัน</span>
+              </button>
+            </div>
+            <div class="table-responsive" style="margin-top: 0.5rem; max-height: 180px; overflow-y: auto;">
+              <table class="custom-table" style="font-size: 0.8rem;" id="eodHistoryTable">
+                <thead>
+                  <tr>
+                    <th>วันที่/เวลา</th>
+                    <th>ยอดเงินระบบ (เงินสด)</th>
+                    <th>ยอดเงินตรวจนับจริง</th>
+                    <th>ส่วนต่าง (ดุล)</th>
+                    <th>สถานะ</th>
+                    <th>ผู้ตรวจนับ</th>
+                  </tr>
+                </thead>
+                <tbody id="eodHistoryTableBody">
+                  <!-- Generated dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      <!-- 2. POS SIMULATOR VIEW -->
+      <section id="pos" class="view-panel">
+        <div class="pos-layout">
+          
+          <!-- Product Catalog Section (Left) -->
+          <div class="catalog-panel">
+            <div class="catalog-actions">
+              <!-- Barcode input field for simulation -->
+              <div class="search-wrapper" style="flex-grow: 0.4; min-width: 180px;">
+                <i data-lucide="scan-line"></i>
+                <input type="text" class="search-input" id="posBarcodeScanInput" placeholder="ยิงบาร์โค้ดสินค้าที่นี่...">
+              </div>
+              
+              <div class="search-wrapper">
+                <i data-lucide="search"></i>
+                <input type="text" class="search-input" id="posSearchProductInput" placeholder="ค้นหาชื่อสินค้าหรือรหัสสินค้า...">
+              </div>
+              
+              <button class="barcode-scan-shortcut-btn" id="posCameraScanBtn">
+                <i data-lucide="camera"></i>
+                <span>สแกนด้วยกล้อง</span>
+              </button>
+            </div>
+            
+            <!-- Category Tabs Selector -->
+            <div class="category-tabs" id="posCategoryTabs">
+              <span class="category-tab active" data-category="All">ทั้งหมด</span>
+              <!-- Dynamically populated in app.js -->
+            </div>
+            
+            <!-- Product Grid -->
+            <div class="catalog-grid" id="posProductGrid">
+              <!-- Filled dynamically in app.js -->
+            </div>
+          </div>
+          
+          <!-- Cart Section (Right) -->
+          <div class="cart-panel">
+            <div class="cart-header">
+              <div class="cart-title-block">
+                <h3>รายการสินค้าในตะกร้า</h3>
+              </div>
+              <button class="clear-cart-btn" id="posClearCartBtn">
+                <i data-lucide="trash-2"></i>
+                <span>ล้างคาร์ท</span>
+              </button>
+            </div>
+            
+            <!-- Cart items -->
+            <div class="cart-items-list" id="posCartItemsList">
+              <!-- Loaded dynamically in app.js -->
+              <div class="empty-cart-state" style="text-align: center; color: var(--text-muted); margin: auto; padding: 2rem 0;">
+                <i data-lucide="shopping-bag" style="width: 48px; height: 48px; margin-bottom: 1rem; stroke-width: 1.5;"></i>
+                <p style="font-size: 0.9rem;">ยังไม่มีสินค้าในตะกร้า</p>
+                <p style="font-size: 0.75rem; margin-top: 0.25rem;">คลิกเลือกสินค้าหรือยิงบาร์โค้ดเพื่อเริ่มทำรายการ</p>
+              </div>
+            </div>
+            
+            <!-- Checkout totals summary -->
+            <div class="cart-summary">
+              <div class="summary-row">
+                <span>ราคารวม (Subtotal)</span>
+                <span id="posSubtotal">฿0.00</span>
+              </div>
+              <div class="summary-row">
+                <span style="display: flex; align-items: center; gap: 0.25rem;">
+                  ส่วนลด (Discount)
+                  <button id="posAddDiscountBtn" style="background:none; border:none; color:var(--accent-primary); cursor:pointer; font-size:0.75rem; text-decoration:underline;">แก้ไข</button>
+                </span>
+                <span id="posDiscount">฿0.00</span>
+              </div>
+              <div class="summary-row">
+                <span>ภาษีมูลค่าเพิ่ม (VAT 7% Included)</span>
+                <span id="posTax">฿0.00</span>
+              </div>
+              <div class="summary-row total">
+                <span>ยอดเงินสุทธิ</span>
+                <span id="posTotal">฿0.00</span>
+              </div>
+              
+              <!-- Payment Method Selector inside POS -->
+              <div class="form-group" style="margin-top: 0.5rem; margin-bottom: 0.5rem;">
+                <label for="posPaymentMethodSelect" style="font-size: 0.75rem; font-weight: 600; color: var(--text-secondary);">ช่องทางการชำระเงิน</label>
+                <select class="filter-input" id="posPaymentMethodSelect" style="width: 100%; font-size: 0.85rem; padding: 0.5rem;">
+                  <option value="Cash">เงินสด (Cash)</option>
+                  <option value="QR Code">พร้อมเพย์ / QR Code</option>
+                  <option value="Credit Card">บัตรเครดิต (Credit Card)</option>
+                </select>
+              </div>
+              
+              <!-- Cash Payment Details (Conditional Display) -->
+              <div id="posCashDetailsBlock" style="margin-bottom: 0.5rem;">
+                <div class="form-row" style="margin-bottom: 0.4rem;">
+                  <div class="form-group">
+                    <label for="posCashReceivedInput" style="font-size: 0.75rem; font-weight: 600;">รับเงินสดมา</label>
+                    <input type="number" class="filter-input" id="posCashReceivedInput" placeholder="0.00" step="10">
+                  </div>
+                  <div class="form-group">
+                    <label style="font-size: 0.75rem; font-weight: 600; color: var(--text-secondary);">เงินทอน</label>
+                    <span id="posChangeText" style="font-weight: 700; font-size: 1.1rem; color: var(--danger); margin-top: 0.4rem;">฿0.00</span>
+                  </div>
+                </div>
+                <!-- Quick Cash Buttons -->
+                <div style="display: flex; gap: 0.25rem; flex-wrap: wrap;">
+                  <button class="btn btn-secondary btn-sm pos-quick-cash-btn" data-value="20" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;">฿20</button>
+                  <button class="btn btn-secondary btn-sm pos-quick-cash-btn" data-value="50" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;">฿50</button>
+                  <button class="btn btn-secondary btn-sm pos-quick-cash-btn" data-value="100" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;">฿100</button>
+                  <button class="btn btn-secondary btn-sm pos-quick-cash-btn" data-value="500" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;">฿500</button>
+                  <button class="btn btn-secondary btn-sm pos-quick-cash-btn" data-value="1000" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;">฿1000</button>
+                </div>
+              </div>
+              
+              <button class="checkout-btn" id="posCheckoutBtn" disabled>
+                <i data-lucide="badge-check"></i>
+                <span>ชำระเงิน & พิมพ์ใบเสร็จ (F8)</span>
+              </button>
+            </div>
+          </div>
+          
+        </div>
+      </section>
+      
+      <!-- 3. PRODUCT CATALOG & BARCODE MANAGEMENT -->
+      <section id="catalog" class="view-panel">
+        <div class="list-panel">
+          <div class="panel-header">
+            <div class="search-wrapper" style="max-width: 400px;">
+              <i data-lucide="search"></i>
+              <input type="text" class="search-input" id="catalogSearchInput" placeholder="ค้นหาสินค้าจากชื่อ หมวดหมู่ หรือบาร์โค้ด...">
+            </div>
+            
+            <div class="panel-actions">
+              <button class="btn btn-secondary" id="catalogManageCategoryBtn">
+                <i data-lucide="tags"></i>
+                <span>จัดการหมวดหมู่</span>
+              </button>
+              <button class="btn btn-secondary" id="catalogBulkImportBtn">
+                <i data-lucide="file-up"></i>
+                <span>นำเข้าสินค้า Excel</span>
+              </button>
+              <button class="btn btn-secondary" id="catalogRestockBtn">
+                <i data-lucide="package-plus"></i>
+                <span>นำเข้าสต็อก (Restock)</span>
+              </button>
+              <button class="btn btn-secondary admin-only" id="catalogStockAuditBtn">
+                <i data-lucide="clipboard-check"></i>
+                <span>ตรวจนับสต็อก</span>
+              </button>
+              <button class="btn btn-secondary" id="catalogPrintSheetBtn">
+                <i data-lucide="printer"></i>
+                <span>พิมพ์แผ่นบาร์โค้ดรวม</span>
+              </button>
+              <button class="btn btn-primary" id="catalogAddProductBtn">
+                <i data-lucide="plus-circle"></i>
+                <span>เพิ่มสินค้าใหม่</span>
+              </button>
+            </div>
+          </div>
+          
+          <div class="table-responsive">
+            <table class="custom-table" id="catalogTable">
+              <thead>
+                <tr>
+                  <th width="80">รหัสสินค้า</th>
+                  <th width="150">บาร์โค้ดสินค้า</th>
+                  <th>ชื่อสินค้า</th>
+                  <th>หมวดหมู่</th>
+                  <th style="text-align: right;">ราคาทุน</th>
+                  <th style="text-align: right;">ราคาขาย</th>
+                  <th style="text-align: center;">คงเหลือ</th>
+                  <th style="text-align: center;">สถานะ</th>
+                  <th style="text-align: center;" width="120">จัดการ</th>
+                </tr>
+              </thead>
+              <tbody id="catalogTableBody">
+                <!-- Populated dynamically in app.js -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+      
+      <!-- 4. DAILY SALES REPORT -->
+      <section id="reports" class="view-panel">
+        <div class="list-panel">
+          <!-- Filter bar -->
+          <div class="filter-bar">
+            <div class="filter-group">
+              <label for="reportStartDate">วันที่เริ่มต้น</label>
+              <input type="date" class="filter-input" id="reportStartDate">
+            </div>
+            
+            <div class="filter-group">
+              <label for="reportEndDate">วันที่สิ้นสุด</label>
+              <input type="date" class="filter-input" id="reportEndDate">
+            </div>
+            
+            <div class="filter-group">
+              <label for="reportCategorySelect">หมวดหมู่สินค้า</label>
+              <select class="filter-input" id="reportCategorySelect">
+                <option value="All">ทั้งหมด</option>
+                <!-- Populated dynamically in app.js -->
+              </select>
+            </div>
+            
+            <div class="filter-group">
+              <label for="reportPaymentSelect">ช่องทางการชำระเงิน</label>
+              <select class="filter-input" id="reportPaymentSelect">
+                <option value="All">ทั้งหมด</option>
+                <option value="Cash">เงินสด (Cash)</option>
+                <option value="QR Code">พร้อมเพย์ / QR Code</option>
+                <option value="Credit Card">บัตรเครดิต (Credit Card)</option>
+              </select>
+            </div>
+            
+            <div class="filter-group" style="flex-grow: 1; justify-content: flex-end; align-items: flex-end;">
+              <button class="btn btn-success" id="reportExportCsvBtn" style="height: 38px;">
+                <i data-lucide="download"></i>
+                <span>ส่งออกรายงานเป็น CSV (Excel)</span>
+              </button>
+            </div>
+          </div>
+          
+          <!-- Detailed Sales report table -->
+          <div class="table-responsive">
+            <table class="custom-table" id="reportSalesTable">
+              <thead>
+                <tr>
+                  <th>วันที่/เวลา</th>
+                  <th>เลขที่บิล</th>
+                  <th>บาร์โค้ด</th>
+                  <th>ชื่อสินค้า</th>
+                  <th>หมวดหมู่</th>
+                  <th style="text-align: right;">จำนวน</th>
+                  <th style="text-align: right;">ราคาทุนรวม</th>
+                  <th style="text-align: right;">ราคาขายรวม</th>
+                  <th style="text-align: right;">กำไรสุทธิ</th>
+                  <th style="text-align: center;">ช่องทางชำระเงิน</th>
+                  <th style="text-align: center;" width="80" class="admin-only">คืน/ยกเลิก</th>
+                </tr>
+              </thead>
+              <tbody id="reportSalesTableBody">
+                <!-- Dynamically generated in app.js -->
+              </tbody>
+              <tfoot>
+                <tr style="background: rgba(var(--accent-primary-rgb), 0.05); font-weight: 700; border-top: 2px solid var(--border-glass);">
+                  <td colspan="5" style="text-align: right; color: var(--text-primary);">รวมทั้งสิ้น:</td>
+                  <td id="reportTotalQty" style="text-align: right; color: var(--text-primary);">0</td>
+                  <td id="reportTotalCost" style="text-align: right; color: var(--text-primary);">฿0.00</td>
+                  <td id="reportTotalRevenue" style="text-align: right; color: var(--success);">฿0.00</td>
+                  <td id="reportTotalProfit" style="text-align: right; color: var(--accent-secondary);">฿0.00</td>
+                  <td></td>
+                  <td class="admin-only"></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. ACTIVITY LOG VIEW -->
+      <section id="activityLog" class="view-panel admin-only">
+        <div class="list-panel">
+          <div class="panel-header">
+            <div class="log-filters">
+              <div class="filter-group">
+                <label for="logUserFilter">ผู้ใช้</label>
+                <select class="filter-input" id="logUserFilter">
+                  <option value="All">ทั้งหมด</option>
+                  <option value="admin">Admin</option>
+                  <option value="cashier">Cashier</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label for="logTypeFilter">ประเภท</label>
+                <select class="filter-input" id="logTypeFilter">
+                  <option value="All">ทั้งหมด</option>
+                  <option value="sale">ขายสินค้า</option>
+                  <option value="price-change">ปรับราคา POS</option>
+                  <option value="restock">นำเข้าสต็อก</option>
+                  <option value="audit">ตรวจนับสต็อก</option>
+                  <option value="product">จัดการสินค้า</option>
+                  <option value="return">คืน/ยกเลิก</option>
+                  <option value="system">ระบบ</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label for="logDateFilter">วันที่</label>
+                <input type="date" class="filter-input" id="logDateFilter">
+              </div>
+            </div>
+            <div class="panel-actions">
+              <button class="btn btn-secondary" id="logExportCsvBtn">
+                <i data-lucide="download"></i>
+                <span>ส่งออก CSV</span>
+              </button>
+              <button class="btn btn-danger btn-sm" id="logClearOldBtn">
+                <i data-lucide="trash-2"></i>
+                <span>ล้าง Log > 30 วัน</span>
+              </button>
+            </div>
+          </div>
+          <div class="log-list" id="activityLogList">
+            <!-- Dynamically populated in app.js -->
+            <div class="log-empty">
+              <i data-lucide="scroll-text" style="width:40px; height:40px; margin-bottom:0.75rem;"></i>
+              <p>ยังไม่มีบันทึกกิจกรรม</p>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+    </main>
+  </div>
+  
+  <!-- === MODALS === -->
+  
+  <!-- 1. CAMERA BARCODE SCANNER MODAL -->
+  <div class="modal-overlay" id="cameraScannerModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>สแกนเนอร์บาร์โค้ดผ่านกล้อง</h3>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.85rem; color: var(--text-secondary);">ถือสินค้าให้ตำแหน่งบาร์โค้ดอยู่กึ่งกลางกล้องเพื่อแสกนเข้าสู่ระบบโดยอัตโนมัติ</p>
+        
+        <div class="scanner-container">
+          <div id="reader"></div>
+          <div class="scanner-overlay">
+            <div class="scanner-laser"></div>
+            <div class="scanner-corner top-left"></div>
+            <div class="scanner-corner top-right"></div>
+            <div class="scanner-corner bottom-left"></div>
+            <div class="scanner-corner bottom-right"></div>
+          </div>
+        </div>
+        
+        <div class="form-group" style="margin-top: 0.5rem;">
+          <label style="font-size: 0.8rem; text-align: center; color: var(--text-muted);">
+            หมายเหตุ: หากต้องการทดสอบโดยไม่ใช้กล้อง สามารถพิมพ์บาร์โค้ดในช่องค้นหาบาร์โค้ดในหน้าเครื่องจำลองได้เช่นกัน
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary modal-close-action-btn">ปิดหน้าต่าง</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 2. VIRTUAL THERMAL RECEIPT MODAL -->
+  <div class="modal-overlay" id="receiptModal">
+    <div class="modal-content" style="max-width: 380px;">
+      <div class="modal-header">
+        <h3>การชำระเงินสำเร็จ</h3>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body" style="background: var(--bg-primary); padding: 1.25rem 0.5rem;">
+        
+        <!-- Receipt Card wrapper -->
+        <div class="receipt-wrapper" id="receiptPrintWrapper">
+          <div class="receipt-header">
+            <h4 id="receiptStoreName">SMARTSALES STORE</h4>
+            <p id="receiptStoreAddress">123 ถ.สุขุมวิท แขวงคลองเตย<br>เขตคลองเตย กรุงเทพฯ 10110</p>
+            <p style="margin-top: 0.25rem; font-size: 0.7rem;" id="receiptStorePhone">โทร. 02-123-4567</p>
+          </div>
+          
+          <div class="receipt-details-row">
+            <span>เลขที่บิล:</span>
+            <span id="receiptTxId" style="font-weight: bold;">TX10001</span>
+          </div>
+          <div class="receipt-details-row">
+            <span>วันที่-เวลา:</span>
+            <span id="receiptTimestamp">02/06/2026 05:00:00</span>
+          </div>
+          <div class="receipt-details-row">
+            <span>ผู้ทำรายการ:</span>
+            <span id="receiptCashierName">ADMIN</span>
+          </div>
+          
+          <div class="receipt-divider"></div>
+          
+          <!-- Items List -->
+          <div id="receiptItemsContainer">
+            <!-- Populated dynamically -->
+          </div>
+          
+          <div class="receipt-divider"></div>
+          
+          <div class="receipt-totals">
+            <div class="receipt-total-row">
+              <span>ราคารวม (Subtotal):</span>
+              <span id="receiptSubtotal">฿0.00</span>
+            </div>
+            <div class="receipt-total-row">
+              <span>ส่วนลด (Discount):</span>
+              <span id="receiptDiscount">฿0.00</span>
+            </div>
+            <div class="receipt-total-row">
+              <span>ภาษี (VAT 7% Incl.):</span>
+              <span id="receiptTax">฿0.00</span>
+            </div>
+            <div class="receipt-total-row grand-total">
+              <span>ยอดรวมทั้งสิ้น:</span>
+              <span id="receiptGrandTotal">฿0.00</span>
+            </div>
+            
+            <div class="receipt-divider"></div>
+            
+            <div class="receipt-total-row">
+              <span>ช่องทางชำระเงิน:</span>
+              <span id="receiptPaymentMethod" style="font-weight: bold;">CASH</span>
+            </div>
+            <div id="receiptCashExchangeBlock">
+              <div class="receipt-total-row">
+                <span>รับเงินสดมา:</span>
+                <span id="receiptCashReceived">฿0.00</span>
+              </div>
+              <div class="receipt-total-row" style="font-weight: bold;">
+                <span>เงินทอน:</span>
+                <span id="receiptChange">฿0.00</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="receipt-footer">
+            <p>*** ขอบคุณที่ใช้บริการ ***</p>
+            <p style="font-size: 0.65rem; color: #475569;">ใบเสร็จฉบับย่อเพื่อการจำลอง</p>
+            <!-- QR or Barcode for print test -->
+            <div class="receipt-barcode">
+              <svg id="receiptBarcodeSvg"></svg>
+            </div>
+          </div>
+        </div>
+        
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary modal-close-action-btn">ปิดหน้าต่าง</button>
+        <button class="btn btn-primary" id="receiptPrintBtn">
+          <i data-lucide="printer"></i>
+          <span>พิมพ์ใบเสร็จ (Print)</span>
+        </button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 3. ADD / EDIT PRODUCT MODAL -->
+  <div class="modal-overlay" id="productFormModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="productModalTitle">เพิ่มสินค้าใหม่</h3>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <form id="productForm">
+        <div class="modal-body">
+          <input type="hidden" id="formProductId">
+          
+          <div class="form-group">
+            <label for="formProductName">ชื่อสินค้า (ไทย/อังกฤษ) *</label>
+            <input type="text" class="form-input" id="formProductName" placeholder="เช่น นมจืดโฟร์โมสต์ 225มล" required>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label for="formProductBarcode">รหัสบาร์โค้ด (Barcode EAN) *</label>
+              <input type="text" class="form-input" id="formProductBarcode" placeholder="เช่น 8851234567890" required>
+              <small style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.2rem; cursor: pointer; text-decoration: underline;" id="formGenerateRandomBarcodeBtn">สุ่มสร้างบาร์โค้ด</small>
+            </div>
+            
+            <div class="form-group">
+              <label for="formProductCategory">หมวดหมู่สินค้า *</label>
+              <select class="form-input" id="formProductCategory" required>
+                <!-- Populated dynamically from categories array -->
+              </select>
+            </div>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label for="formProductCost">ราคาทุนต่อหน่วย (Cost) *</label>
+              <input type="number" class="form-input" id="formProductCost" placeholder="0.00" min="0" step="0.01" required>
+            </div>
+            <div class="form-group">
+              <label for="formProductPrice">ราคาขายต่อหน่วย (Price) *</label>
+              <input type="number" class="form-input" id="formProductPrice" placeholder="0.00" min="0" step="0.01" required>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="formProductStock">จำนวนสต็อกสินค้าคงเหลือ (Stock) *</label>
+            <input type="number" class="form-input" id="formProductStock" placeholder="เช่น 100" min="0" required>
+          </div>
+        </div>
+        
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary modal-close-action-btn">ยกเลิก</button>
+          <button type="submit" class="btn btn-primary" id="formSubmitBtn">บันทึกข้อมูลสินค้า</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  <!-- 4. BARCODE LABELS PRINT SHEET MODAL -->
+  <div class="modal-overlay" id="barcodeLabelsModal">
+    <div class="modal-content" style="max-width: 650px;">
+      <div class="modal-header">
+        <h3>แผ่นจำลองสติกเกอร์บาร์โค้ด</h3>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body" style="background: var(--bg-primary); padding: 1.5rem 0.75rem;">
+        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;" class="print-instruction-text">
+          รายการแผ่นบาร์โค้ดสินค้าในระบบ เพื่อนำไปพิมพ์และติดบนสินค้าจริง (พิมพ์ออกมาในขนาดสติกเกอร์)
+        </p>
+        
+        <div class="barcode-sheet-grid" id="barcodeLabelsContainer">
+          <!-- Filled dynamically in app.js with individual barcode stickers -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary modal-close-action-btn">ปิดหน้าต่าง</button>
+        <button class="btn btn-primary" id="barcodeLabelsPrintBtn">
+          <i data-lucide="printer"></i>
+          <span>พิมพ์สติกเกอร์บาร์โค้ด (Print Labels)</span>
+        </button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 5. DISCOUNT EDIT MODAL -->
+  <div class="modal-overlay" id="discountModal">
+    <div class="modal-content" style="max-width: 320px;">
+      <div class="modal-header">
+        <h3>ใส่ส่วนลดรวม</h3>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="discountTypeSelect">ประเภทส่วนลด</label>
+          <select class="filter-input" id="discountTypeSelect" style="width: 100%;">
+            <option value="amount">จำนวนเงิน (฿)</option>
+            <option value="percent">เปอร์เซ็นต์ (%)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="discountValueInput">มูลค่าส่วนลด</label>
+          <input type="number" class="form-input" id="discountValueInput" placeholder="0.00" min="0">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary modal-close-action-btn">ยกเลิก</button>
+        <button class="btn btn-primary" id="saveDiscountBtn">ตกลง</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. CATEGORY MANAGER MODAL -->
+  <div class="modal-overlay" id="categoryManagerModal">
+    <div class="modal-content" style="max-width: 480px;">
+      <div class="modal-header">
+        <h3>จัดการหมวดหมู่สินค้า</h3>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="category-list" id="categoryList"></div>
+        <div class="add-category-row">
+          <input type="text" class="form-input" id="newCategoryKey" placeholder="Key (เช่น Frozen)" style="flex:0.8;">
+          <input type="text" class="form-input" id="newCategoryName" placeholder="ชื่อไทย (เช่น อาหารแช่แข็ง)">
+          <button class="btn btn-primary" id="addCategoryBtn" style="padding: 0.5rem 0.75rem;">
+            <i data-lucide="plus"></i>
+          </button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary modal-close-action-btn">ปิด</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. BULK IMPORT MODAL -->
+  <div class="modal-overlay" id="bulkImportModal">
+    <div class="modal-content" style="max-width: 700px;">
+      <div class="modal-header">
+        <h3>นำเข้าสินค้าจาก Excel</h3>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div style="display:flex; gap:0.5rem; margin-bottom:1rem;">
+          <button class="btn btn-secondary" id="bulkImportDownloadTemplateBtn">
+            <i data-lucide="download"></i>
+            <span>ดาวน์โหลด Template Excel</span>
+          </button>
+        </div>
+        <div class="import-zone" id="bulkImportDropZone">
+          <i data-lucide="upload-cloud"></i>
+          <p>คลิกเพื่อเลือกไฟล์ Excel (.xlsx)</p>
+          <small>หรือลากไฟล์มาวางที่นี่</small>
+          <input type="file" id="bulkImportFileInput" accept=".xlsx,.xls" style="display:none;">
+        </div>
+        <div id="bulkImportPreview" style="display:none;">
+          <div class="preview-table-wrapper">
+            <table class="preview-table" id="bulkImportPreviewTable">
+              <thead><tr id="bulkImportPreviewHead"></tr></thead>
+              <tbody id="bulkImportPreviewBody"></tbody>
+            </table>
+          </div>
+          <div class="import-summary" id="bulkImportSummary"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary modal-close-action-btn">ยกเลิก</button>
+        <button class="btn btn-primary" id="bulkImportConfirmBtn" disabled>
+          <i data-lucide="check-circle"></i>
+          <span>นำเข้าสินค้าทั้งหมด</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. RESTOCK MODAL -->
+  <div class="modal-overlay" id="restockModal">
+    <div class="modal-content" style="max-width: 700px;">
+      <div class="modal-header">
+        <h3>นำเข้าสต็อก (Restock via Excel)</h3>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div style="display:flex; gap:0.5rem; margin-bottom:1rem;">
+          <button class="btn btn-secondary" id="restockDownloadTemplateBtn">
+            <i data-lucide="download"></i>
+            <span>ดาวน์โหลด Template Excel</span>
+          </button>
+        </div>
+        <div class="import-zone" id="restockDropZone">
+          <i data-lucide="upload-cloud"></i>
+          <p>คลิกเพื่อเลือกไฟล์ Excel (.xlsx)</p>
+          <small>หรือลากไฟล์มาวางที่นี่</small>
+          <input type="file" id="restockFileInput" accept=".xlsx,.xls" style="display:none;">
+        </div>
+        <div id="restockPreview" style="display:none;">
+          <div class="preview-table-wrapper">
+            <table class="preview-table" id="restockPreviewTable">
+              <thead>
+                <tr>
+                  <th>บาร์โค้ด</th>
+                  <th>ชื่อสินค้า</th>
+                  <th style="text-align:center;">สต็อกเดิม</th>
+                  <th style="text-align:center;">จำนวนที่เพิ่ม</th>
+                  <th style="text-align:center;">สต็อกใหม่</th>
+                  <th style="text-align:right;">ราคาเดิม</th>
+                  <th style="text-align:right;">ราคาใหม่</th>
+                  <th style="text-align:right;">ต้นทุนใหม่</th>
+                  <th>สถานะ/เหตุผล</th>
+                </tr>
+              </thead>
+              <tbody id="restockPreviewBody"></tbody>
+            </table>
+          </div>
+          <div class="import-summary" id="restockSummary"></div>
+          <button class="btn btn-warning" id="restockDownloadMismatchedBtn" style="display:none; width:100%; justify-content:center; margin-top:0.75rem; gap:0.5rem;">
+            <i data-lucide="download"></i>
+            <span>ดาวน์โหลดสินค้าไม่มีในระบบเพื่อนำเข้าใหม่ (Excel)</span>
+          </button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary modal-close-action-btn">ยกเลิก</button>
+        <button class="btn btn-primary" id="restockConfirmBtn" disabled>
+          <i data-lucide="check-circle"></i>
+          <span>ยืนยันปรับสต็อก</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 9. STOCK AUDIT MODAL -->
+  <div class="modal-overlay" id="stockAuditModal">
+    <div class="modal-content" style="max-width: 850px;">
+      <div class="modal-header">
+        <h3>ตรวจนับสต็อกรายเดือน (Monthly Stock Audit)</h3>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div style="display:flex; gap:0.5rem; margin-bottom:1rem;">
+          <button class="btn btn-secondary" id="stockAuditDownloadTemplateBtn">
+            <i data-lucide="download"></i>
+            <span>ดาวน์โหลดแบบฟอร์มตรวจนับสต็อก (Pre-filled)</span>
+          </button>
+        </div>
+        <div class="import-zone" id="stockAuditDropZone">
+          <i data-lucide="upload-cloud"></i>
+          <p>คลิกเพื่อเลือกไฟล์แบบฟอร์มที่กรอกจำนวนนับจริงแล้ว (.xlsx)</p>
+          <small>หรือลากไฟล์มาวางที่นี่</small>
+          <input type="file" id="stockAuditFileInput" accept=".xlsx,.xls" style="display:none;">
+        </div>
+        <div id="stockAuditPreview" style="display:none;">
+          <div class="variance-report">
+            <div class="variance-summary-cards">
+              <div class="variance-card matched">
+                <div class="num" id="auditCountMatched">0</div>
+                <div class="label">สต็อกตรงกัน (รายการ)</div>
+              </div>
+              <div class="variance-card short">
+                <div class="num" id="auditCountShort">0</div>
+                <div class="label">สต็อกขาด (รายการ)</div>
+              </div>
+              <div class="variance-card over">
+                <div class="num" id="auditCountOver">0</div>
+                <div class="label">สต็อกเกิน (รายการ)</div>
+              </div>
+              <div class="variance-card loss">
+                <div class="num" id="auditTotalLoss">฿0.00</div>
+                <div class="label">มูลค่าขาดหายรวม (ทุน)</div>
+              </div>
+            </div>
+            
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem; margin-top: 1rem;">
+              <h4 style="font-size:0.9rem;">รายการเปรียบเทียบและผลต่างสต็อก</h4>
+              <button class="btn btn-success btn-sm" id="auditExportVarianceBtn">
+                <i data-lucide="download"></i> <span>ส่งออกรายงานผลต่าง (Excel)</span>
+              </button>
+            </div>
+            
+            <div class="preview-table-wrapper">
+              <table class="preview-table" id="stockAuditPreviewTable">
+                <thead>
+                  <tr>
+                    <th>บาร์โค้ด</th>
+                    <th>ชื่อสินค้า</th>
+                    <th style="text-align:center;">สต็อกระบบ</th>
+                    <th style="text-align:center;">จำนวนนับจริง</th>
+                    <th style="text-align:center;">ผลต่าง</th>
+                    <th style="text-align:right;">ราคาทุนต่อหน่วย</th>
+                    <th style="text-align:right;">มูลค่าผลต่าง</th>
+                    <th>สถานะ</th>
+                  </tr>
+                </thead>
+                <tbody id="stockAuditPreviewBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary modal-close-action-btn">ยกเลิก</button>
+        <button class="btn btn-primary" id="stockAuditConfirmBtn" disabled>
+          <i data-lucide="check-circle"></i>
+          <span>ยืนยันการปรับสต็อก (ปรับจำนวนสต็อกเป็นจำนวนนับจริง)</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 10. END OF DAY RECONCILIATION MODAL -->
+  <div class="modal-overlay" id="eodReconcileModal">
+    <div class="modal-content" style="max-width: 480px;">
+      <div class="modal-header">
+        <h3>ปิดยอดประจำวัน (End-of-Day)</h3>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="eod-summary">
+          <div class="eod-item">
+            <span class="label">ยอดขายเงินสดตามระบบ (System Cash)</span>
+            <span class="value" id="eodSystemCash">฿0.00</span>
+          </div>
+          <div class="eod-item">
+            <span class="label">จำนวนธุรกรรมเงินสด</span>
+            <span class="value" id="eodCashTxCount">0 บิล</span>
+          </div>
+        </div>
+        
+        <div class="form-group" style="margin-top: 1rem;">
+          <label for="eodActualCashInput">ระบุจำนวนเงินสดในลิ้นชักที่นับจริงได้ (บาท) *</label>
+          <input type="number" class="form-input" id="eodActualCashInput" placeholder="กรอกจำนวนเงินบาท..." min="0" step="1" required>
+        </div>
+        
+        <div id="eodResultWrapper" style="display:none; margin-top: 1rem;">
+          <div class="eod-result" id="eodResultBox">
+            <div class="amount" id="eodDiffAmount">฿0.00</div>
+            <div class="status" id="eodDiffStatus">ตรงตามยอดระบบ</div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary modal-close-action-btn">ยกเลิก</button>
+        <button class="btn btn-primary" id="eodConfirmBtn">ยืนยันและบันทึกปิดยอด</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Notification Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+  
+  <!-- Core Logic Script loading -->
+  <script src="mockData.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

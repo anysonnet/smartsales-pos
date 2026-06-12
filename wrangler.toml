@@ -1,0 +1,9 @@
+#:schema node_modules/wrangler/config-schema.json
+name = "smartsales-pos"
+compatibility_date = "2024-04-01"
+pages_build_output_dir = "."
+
+[[d1_databases]]
+binding = "DB"
+database_name = "smartsales-db"
+database_id = "d69daafd-1eb2-4487-a902-461c47bf6583"
