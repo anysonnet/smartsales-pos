@@ -96,7 +96,7 @@
             <span>คลังสินค้า & บาร์โค้ด</span>
           </a>
         </li>
-        <li class="nav-item admin-only" data-tab="reports">
+        <li class="nav-item" data-tab="reports">
           <a href="#" class="nav-link">
             <i data-lucide="file-spreadsheet"></i>
             <span>รายงานยอดขาย</span>
@@ -550,9 +550,9 @@
                   <th>ชื่อสินค้า</th>
                   <th>หมวดหมู่</th>
                   <th style="text-align: right;">จำนวน</th>
-                  <th style="text-align: right;">ราคาทุนรวม</th>
+                  <th style="text-align: right;" class="admin-only">ราคาทุนรวม</th>
                   <th style="text-align: right;">ราคาขายรวม</th>
-                  <th style="text-align: right;">กำไรสุทธิ</th>
+                  <th style="text-align: right;" class="admin-only">กำไรสุทธิ</th>
                   <th style="text-align: center;">ช่องทางชำระเงิน</th>
                   <th style="text-align: center;" width="80" class="admin-only">คืน/ยกเลิก</th>
                 </tr>
@@ -564,9 +564,9 @@
                 <tr style="background: rgba(var(--accent-primary-rgb), 0.05); font-weight: 700; border-top: 2px solid var(--border-glass);">
                   <td colspan="5" style="text-align: right; color: var(--text-primary);">รวมทั้งสิ้น:</td>
                   <td id="reportTotalQty" style="text-align: right; color: var(--text-primary);">0</td>
-                  <td id="reportTotalCost" style="text-align: right; color: var(--text-primary);">฿0.00</td>
+                  <td id="reportTotalCost" style="text-align: right; color: var(--text-primary);" class="admin-only">฿0.00</td>
                   <td id="reportTotalRevenue" style="text-align: right; color: var(--success);">฿0.00</td>
-                  <td id="reportTotalProfit" style="text-align: right; color: var(--accent-secondary);">฿0.00</td>
+                  <td id="reportTotalProfit" style="text-align: right; color: var(--accent-secondary);" class="admin-only">฿0.00</td>
                   <td></td>
                   <td class="admin-only"></td>
                 </tr>

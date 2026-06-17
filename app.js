@@ -408,7 +408,7 @@ document.addEventListener("DOMContentLoaded", () => {
       e.preventDefault();
       const tabName = item.getAttribute("data-tab");
       // Role protection
-      if (currentUser.role !== "admin" && (tabName === "dashboard" || tabName === "reports" || tabName === "activityLog")) {
+      if (currentUser.role !== "admin" && (tabName === "dashboard" || tabName === "activityLog")) {
         showToast("สิทธิ์การใช้งานจำกัดเฉพาะผู้ดูแลระบบ", "error");
         return;
       }
@@ -2514,9 +2514,9 @@ document.addEventListener("DOMContentLoaded", () => {
         <td><strong>${row.name}</strong></td>
         <td>${getCategoryThaiName(row.category)}</td>
         <td style="text-align: right; font-family: monospace;">${qtyText}</td>
-        <td style="text-align: right; font-family: monospace;">${costText}</td>
+        <td style="text-align: right; font-family: monospace;" class="admin-only">${costText}</td>
         <td style="text-align: right; font-family: monospace; font-weight: 600; color: ${row.totalPrice < 0 ? 'var(--danger)' : 'var(--accent-secondary)'};">${revenueText}</td>
-        <td style="text-align: right; font-family: monospace; font-weight: 600; color: ${row.profit < 0 ? 'var(--danger)' : 'var(--success)'};">${profitText}</td>
+        <td style="text-align: right; font-family: monospace; font-weight: 600; color: ${row.profit < 0 ? 'var(--danger)' : 'var(--success)'};" class="admin-only">${profitText}</td>
         <td style="text-align: center; font-size: 0.8rem; font-weight: 600;">
           ${getPaymentBadge(row.paymentMethod)}
         </td>
@@ -2599,7 +2599,10 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    let csvContent = "วันที่-เวลา,เลขที่บิล,บาร์โค้ด,ชื่อสินค้า,หมวดหมู่,จำนวนขาย,ราคาทุนรวม,ราคาขายรวม,กำไรสุทธิ,ช่องทางการชำระเงิน\r\n";
+    const isAdmin = currentUser && currentUser.role === "admin";
+    let csvContent = isAdmin
+      ? "วันที่-เวลา,เลขที่บิล,บาร์โค้ด,ชื่อสินค้า,หมวดหมู่,จำนวนขาย,ราคาทุนรวม,ราคาขายรวม,กำไรสุทธิ,ช่องทางการชำระเงิน\r\n"
+      : "วันที่-เวลา,เลขที่บิล,บาร์โค้ด,ชื่อสินค้า,หมวดหมู่,จำนวนขาย,ราคาขายรวม,ช่องทางการชำระเงิน\r\n";
 
     trs.forEach(tr => {
       const tds = tr.querySelectorAll("td");
@@ -2610,12 +2613,16 @@ document.addEventListener("DOMContentLoaded", () => {
       const name = tds[3].textContent.replace(/,/g, " ");
       const category = tds[4].textContent;
       const qty = tds[5].textContent;
-      const cost = tds[6].textContent.replace("฿", "").replace(/,/g, "");
       const revenue = tds[7].textContent.replace("฿", "").replace(/,/g, "");
-      const profit = tds[8].textContent.replace("฿", "").replace(/,/g, "");
       const method = tds[9].textContent.trim();
 
-      csvContent += `${dateTime},${billNo},'${barcode},${name},${category},${qty},${cost},${revenue},${profit},${method}\r\n`;
+      if (isAdmin) {
+        const cost = tds[6].textContent.replace("฿", "").replace(/,/g, "");
+        const profit = tds[8].textContent.replace("฿", "").replace(/,/g, "");
+        csvContent += `${dateTime},${billNo},'${barcode},${name},${category},${qty},${cost},${revenue},${profit},${method}\r\n`;
+      } else {
+        csvContent += `${dateTime},${billNo},'${barcode},${name},${category},${qty},${revenue},${method}\r\n`;
+      }
     });
 
     const BOM = "\uFEFF";
