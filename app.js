@@ -416,7 +416,70 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  function switchTab(tabName) {
+  async function refreshCurrentStock(showNotification = false) {
+    if (isCloudflareDb) {
+      try {
+        const productsRes = await fetch("/api/products");
+        if (productsRes.ok) {
+          products = await productsRes.json();
+          saveLocalFallback();
+          if (showNotification) {
+            showToast("ดึงข้อมูลสต็อกปัจจุบันจากฐานข้อมูลออนไลน์เรียบร้อยแล้ว", "success");
+          }
+        } else {
+          if (showNotification) {
+            showToast("เกิดข้อผิดพลาดในการดึงข้อมูลสต็อกปัจจุบัน", "error");
+          }
+        }
+      } catch (e) {
+        console.error("Failed to fetch current stock:", e);
+        if (showNotification) {
+          showToast("ไม่สามารถดึงข้อมูลสต็อกปัจจุบันได้ (เครือข่ายขัดข้อง)", "error");
+        }
+      }
+    } else {
+      // Fallback local storage reload
+      const storedProducts = localStorage.getItem("smartsales_products");
+      if (storedProducts) {
+        products = JSON.parse(storedProducts);
+      }
+      if (showNotification) {
+        showToast("รีเฟรชข้อมูลสต็อกปัจจุบันจาก LocalStorage สำเร็จ", "success");
+      }
+    }
+  }
+
+  function exportStockToExcel() {
+    if (!products || products.length === 0) {
+      showToast("ไม่มีข้อมูลสินค้าให้ส่งออก", "warning");
+      return;
+    }
+    
+    // Prepare data for Excel
+    const data = products.map(p => ({
+      "รหัสสินค้า": p.id,
+      "บาร์โค้ด": p.barcode || "",
+      "ชื่อสินค้า": p.name,
+      "หมวดหมู่": p.category,
+      "ราคาทุน": p.costPrice,
+      "ราคาขาย": p.price,
+      "คงเหลือ": p.stock,
+      "หน่วยนับ": p.unit || "",
+      "สถานะ": p.stock > 10 ? "มีสินค้า" : p.stock > 0 ? "ใกล้หมด" : "สินค้าหมด"
+    }));
+
+    // Create workbook and worksheet
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Stock");
+
+    // Generate Excel file and trigger download
+    const dateStr = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(workbook, `Stock_Export_${dateStr}.xlsx`);
+    showToast("Export Excel สำเร็จ", "success");
+  }
+
+  async function switchTab(tabName) {
     activeTab = tabName;
     
     navItems.forEach(item => {
@@ -447,6 +510,7 @@ document.addEventListener("DOMContentLoaded", () => {
       setTimeout(() => document.getElementById("posBarcodeScanInput").focus(), 150);
     } else if (tabName === "catalog") {
       titleText.textContent = "คลังสินค้าและบาร์โค้ด";
+      await refreshCurrentStock(false);
       renderCatalogTable();
     } else if (tabName === "reports") {
       titleText.textContent = "รายงานยอดขายเชิงวิเคราะห์";
@@ -1523,6 +1587,10 @@ document.addEventListener("DOMContentLoaded", () => {
       margin: 4
     });
   }
+
+  document.getElementById("catalogExportStockBtn").addEventListener("click", () => {
+    exportStockToExcel();
+  });
 
   // Single Add Product Button
   document.getElementById("catalogAddProductBtn").addEventListener("click", () => {
